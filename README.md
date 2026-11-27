@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8+-green.svg)](https://www.python.org/)
 [![R 4.1+](https://img.shields.io/badge/R-4.1+-276DC3.svg)](https://www.r-project.org/)
-
+Key OutputsFileDescription<PATH_TO_OUTPUT>/02_pan_library/panBrassicaceae_TElib.faCurated non-redundant 42,688-family pan-Brassicaceae TE libraryresults/04_abundance_matrices/TE_superfamily_bp.tsvDeduplicated base pairs per TE superfamily across all 13 assembliesresults/04_abundance_matrices/TE_superfamily_pct.tsvNon-overlapping genomic proportion (%) per TE superfamilyresults/04_abundance_matrices/TE_family_filtered_pct.tsvPrimary filtered matrix (39,785 families) for phylogenetic analysisresults/05_figures_and_trees/filtered_hellinger_NJ_rooted_boot500.nwkOutgroup-rooted NJ tree (500 bootstrap replicates)results/05_figures_and_trees/G3_Table_TE_summary_13species.tsvPublication summary table of assembly size and TE class proportionsresults/05_figures_and_trees/Figure_PanTE_Landscape_and_Scaling.pdfMultipanel figure (rooted pan-TE phylogeny + composition + scaling regressions)
 Reproducible pan-TE annotation, clustering, and comparative phylogenomic scaling pipeline across **13 Brassicaceae genomes** (*Aubrieta deltoidea*, *Bornmuellera tymphaea*, *Draba lasiocarpa*, *Iberis sempervirens*, *Isatis tinctoria*, *Rorippa pyrenaica*, *Aethionema saxatile*, *Alyssum gmelinii*, *Arabidopsis thaliana*, *Cardamine glauca*, *Erysimum linariifolium*, *Noccaea praecox*, and *Odontarrhena muralis*) using EDTA, MMseqs2, RepeatMasker, Python, and R.
 
 ---
@@ -64,3 +64,44 @@ Because raw genome assemblies and RepeatMasker alignment files exceed GitHub's 1
 Genome assemblies & CDS annotations: NCBI / ENA BioProject [ACCESSION] (see data/species_metadata.tsv)
 
 Curated 42,688-family pan-TE library & RepeatMasker .out alignments: Zenodo DOI [10.5281/zenodo.XXXXXXX]\
+
+## Quick Start
+Option A: Run Full Pipeline from Local Genome Assemblies
+Replace <PATH_TO_GENOMES>, <PATH_TO_CDS> (optional), and <PATH_TO_OUTPUT> with your local directories:\
+```
+# Step 1: De novo TE discovery per species (omit <PATH_TO_CDS> if not supplying CDS FASTAs)
+bash scripts/01_run_edta.sh <PATH_TO_GENOMES> <PATH_TO_OUTPUT>/01_edta 16 <PATH_TO_CDS>
+
+# Step 2: Cluster species libraries into the non-redundant pan-Brassicaceae library
+bash scripts/02_build_pan_library.sh <PATH_TO_OUTPUT>/01_edta <PATH_TO_OUTPUT>/02_pan_library 16
+
+# Step 3: Annotate all assemblies uniformly with RepeatMasker
+bash scripts/03_run_repeatmasker.sh <PATH_TO_GENOMES> <PATH_TO_OUTPUT>/02_pan_library/panBrassicaceae_TElib.fa <PATH_TO_OUTPUT>/03_repeatmasker 16
+
+# Step 4: Resolve overlapping hits and build non-overlapping abundance matrices
+python3 scripts/04_parse_nonoverlapping_te.py \
+  --rm-dir <PATH_TO_OUTPUT>/03_repeatmasker \
+  --meta data/species_metadata.tsv \
+  --out-dir results/04_abundance_matrices
+
+# Step 5: Reconstruct rooted NJ tree, compute scaling regressions, and generate figures
+Rscript scripts/05_phylogeny_and_scaling.R \
+  --mat-dir results/04_abundance_matrices \
+  --meta data/species_metadata.tsv \
+  --out-dir results/05_figures_and_trees\
+  ```
+## Option B: Reproduce Trees, Correlations & Figures from RepeatMasker .out Files
+Download and unpack the RepeatMasker .out directory from Zenodo, then run Steps 4 and 5:\
+```
+python3 scripts/04_parse_nonoverlapping_te.py \
+  --rm-dir <PATH_TO_03_REPEATMASKER> \
+  --meta data/species_metadata.tsv \
+  --out-dir results/04_abundance_matrices
+
+Rscript scripts/05_phylogeny_and_scaling.R \
+  --mat-dir results/04_abundance_matrices \
+  --meta data/species_metadata.tsv \
+  --out-dir results/05_figures_and_trees
+  ```
+## Key OutputsFileDescription<PATH_TO_OUTPUT>/02_pan_library/panBrassicaceae_TElib.faCurated non-redundant 42,688-family pan-Brassicaceae TE libraryresults/04_abundance_matrices/TE_superfamily_bp.tsvDeduplicated base pairs per TE superfamily across all 13 assembliesresults/04_abundance_matrices/TE_superfamily_pct.tsvNon-overlapping genomic proportion (%) per TE superfamilyresults/04_abundance_matrices/TE_family_filtered_pct.tsvPrimary filtered matrix (39,785 families) for phylogenetic analysisresults/05_figures_and_trees/filtered_hellinger_NJ_rooted_boot500.nwkOutgroup-rooted NJ tree (500 bootstrap replicates)results/05_figures_and_trees/G3_Table_TE_summary_13species.tsvPublication summary table of assembly size and TE class proportionsresults/05_figures_and_trees/Figure_PanTE_Landscape_and_Scaling.pdfMultipanel figure (rooted pan-TE phylogeny + composition + scaling regressions)\
+
